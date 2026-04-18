@@ -1,6 +1,7 @@
 #include "app/app_chassis.h"
 #include "bsp/bsp_rc.h"
 #include "can.h"
+#include "tim.h"
 #include "cmsis_os.h"
 
 extern CAN_HandleTypeDef hcan1; // Usually M2006 on CAN1 or CAN2
@@ -109,6 +110,7 @@ void Chassis_Task(void * argument)
 {
     int16_t target_wheel_speeds[4] = {0};
     int16_t motor_currents[4]      = {0};
+    uint16_t servo_pulse           = 700; // Initialize at your mid/safe position
     
     Motor_PID_Init();
 
@@ -126,6 +128,14 @@ void Chassis_Task(void * argument)
     HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
     HAL_CAN_Start(&hcan1);
     HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+
+    // Init Servo PWM (TIM1 CH1)
+    // TIM1 clock is 168MHz. Prescaler = 168-1 = 167 -> 1MHz counter clock.
+    // Period = 20000-1 = 19999 -> 50Hz (20ms) PWM signal.
+    __HAL_TIM_SET_PRESCALER(&htim1, 167);
+    __HAL_TIM_SET_AUTORELOAD(&htim1, 19999);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 700); // 1.5ms pulse -> Middle position
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 
     while(1)
     {
@@ -154,10 +164,28 @@ void Chassis_Task(void * argument)
         vw *= 5;
 
         // Remote Switch Check (Safety disable) (rc_ctrl.rc.s[0] values: 1(UP), 3(MID), 2(DOWN))
-        if(rc_ctrl.rc.s[0] == 2) { 
-            // Stick is pointing DOWN. Stop the motors.
+        if(rc_ctrl.rc.s[0] == 2 ) { 
+            // Right Stick is pointing DOWN. Stop the chassis motors for safety.
             vx = 0; vy = 0; vw = 0;
-        } // Otherwise it will allow movement
+        }
+
+        // Servo Gripper logic on Left Switch (s[1])
+        // Increment/Decrement the pulse while the switch is held
+        if (rc_ctrl.rc.s[1] == 1) {
+            servo_pulse++; 
+        } else if (rc_ctrl.rc.s[1] == 2) {
+            servo_pulse--; 
+        }
+        
+        // Add bounds for safety (using your tested limits)
+        if (servo_pulse > 810) {
+            servo_pulse = 810;
+        } else if (servo_pulse < 560) {
+            servo_pulse = 560;
+        }
+
+        // Set the PWM constantly so it holds its position in the middle (3)
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, servo_pulse);
 
         // 3. Mecanum Kinematics calculation
         Chassis_Kinematics(vx, vy, vw, target_wheel_speeds);
