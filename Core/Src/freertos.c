@@ -109,7 +109,7 @@ void MX_FREERTOS_Init(void) {
   /* add threads, ... */
   const osThreadAttr_t chassisTask_attributes = {
     .name = "chassisTask",
-    .stack_size = 512 * 4,
+    .stack_size = 1024 * 4,
     .priority = (osPriority_t) osPriorityNormal,
   };
   chassisTaskHandle = osThreadNew(Chassis_Task, NULL, &chassisTask_attributes);

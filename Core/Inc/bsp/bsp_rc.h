@@ -29,6 +29,7 @@ typedef struct
 } RC_ctrl_t;
 
 extern RC_ctrl_t rc_ctrl;
+extern volatile uint32_t rc_last_update_ms;
 void RC_Init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num);
 void sbus_to_rc(volatile const uint8_t *sbus_buf, RC_ctrl_t *rc_ctrl);
 
