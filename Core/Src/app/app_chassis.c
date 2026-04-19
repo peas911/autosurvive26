@@ -48,7 +48,7 @@ void Motor_PID_Init(void)
         m2006_speed_pids[i].Kp = 15.0f;     // Rough initial tuning for M2006 Speed
         m2006_speed_pids[i].Ki = 0.1f;
         m2006_speed_pids[i].Kd = 0.0f;
-        m2006_speed_pids[i].max_out = 9000.f;  // C610 takes max current +/- ~10000
+        m2006_speed_pids[i].max_out = 5000.f;  // C610 takes max current +/- ~10000
         m2006_speed_pids[i].max_iout = 3000.f; // Integral Limit
     }
 }
@@ -152,16 +152,16 @@ void Chassis_Task(void * argument)
         int16_t vw = -rc_ctrl.rc.ch[2]; 
 
         // 2. Add Deadband to stick
-        if (vx < 10 && vx > -10) vx = 0;
-        if (vy < 10 && vy > -10) vy = 0;
-        if (vw < 10 && vw > -10) vw = 0;
+        if (vx < 30 && vx > -30) vx = 0;
+        if (vy < 30 && vy > -30) vy = 0;
+        if (vw < 30 && vw > -30) vw = 0;
 
         // Multiply speed by simple coefficient. M2006 is 36:1, max rotor speed is ~10000 RPM 
         // -> Max wheel speed is around 250 RPM. DBUS range is +-660. 
         // Scale it safely. 
-        vx *= 5; 
-        vy *= 5;
-        vw *= 5;
+        vx *= 7; 
+        vy *= 7;
+        vw *= 7;
 
         // Remote Switch Check (Safety disable) (rc_ctrl.rc.s[0] values: 1(UP), 3(MID), 2(DOWN))
         if(rc_ctrl.rc.s[0] == 2 ) { 
@@ -180,8 +180,8 @@ void Chassis_Task(void * argument)
         // Add bounds for safety (using your tested limits)
         if (servo_pulse > 810) {
             servo_pulse = 810;
-        } else if (servo_pulse < 560) {
-            servo_pulse = 560;
+        } else if (servo_pulse < 550) {
+            servo_pulse = 550;
         }
 
         // Set the PWM constantly so it holds its position in the middle (3)
