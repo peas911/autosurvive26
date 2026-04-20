@@ -242,8 +242,8 @@ void Chassis_Task(void * argument)
         }
         
         // Add bounds for safety (using your tested limits)
-        if (servo_pulse > 810) {
-            servo_pulse = 810;
+        if (servo_pulse > 740) {
+            servo_pulse = 740;
         } else if (servo_pulse < 550) {
             servo_pulse = 550;
         }
